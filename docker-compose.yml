@@ -1,0 +1,53 @@
+version: "3"
+
+networks:
+  lol-network:
+    driver: bridge
+
+services:
+
+  front:
+    build: 
+      context: ./front
+    ports:
+      - "4200:4200"
+    networks:
+      - lol-network
+    depends_on:
+      - back
+    volumes:
+      - ./front:/app
+    working_dir: /app
+    command: npm start
+
+  back:
+    build: 
+      context: ./back
+      args:
+        USERNAME_DEV: ${USER}
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/loldb
+      SPRING_DATASOURCE_USERNAME: loldbuser
+      SPRING_DATASOURCE_PASSWORD: loldbpass
+    networks:
+      - lol-network
+    depends_on:
+      - mysql
+    volumes:
+      - ./back:/app
+      - ~/.m2:/var/maven/.m2
+    working_dir: /app
+    user: ${USER}
+    command: mvn clean install spring-boot:run
+    ports:
+      - 8080:8080
+
+  mysql:
+    image: mysql
+    networks:
+      - lol-network
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: loldb
+      MYSQL_USER: loldbuser
+      MYSQL_PASSWORD: loldbpass
